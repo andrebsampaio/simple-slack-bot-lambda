@@ -1,0 +1,13 @@
+{
+    "name": "sturdy-spork",
+    "description": "AI Chatbot",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "@slack/bolt": "^3.12.2",
+        "openai": "^3.1.0",
+        "request": "^2.88.2",
+        "aws-sdk": "^2.1325.0"
+    }
+}
+

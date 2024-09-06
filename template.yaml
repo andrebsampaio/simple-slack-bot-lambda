@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Sturdy Spork AI Bot
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Parameters:
+  OpenAIApiKey:
+    Description: "Your OpenAI API Key"
+    Type: String
+  SlackSigningSecret:
+    Description: "Your Slack Signing Secret"
+    Type: String
+  SlackBotToken:
+    Description: "Your Slack Bot Token"
+    Type: String
+
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 500
+    Architectures:
+    - x86_64
+    MemorySize: 128
+    Environment:
+      Variables:
+        OPENAI_API_KEY: !Ref OpenAIApiKey 
+        SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
+        SLACK_BOT_TOKEN: !Ref SlackBotToken
+
+Resources:
+  commandHandlerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: invokeLambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - lambda:InvokeFunction
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${answerFunction}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  commandHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "BotCommandHandlerFunction"
+      Handler: src/handlers/bot.handler
+      Role: !GetAtt commandHandlerLambdaRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+  answerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "BotAnswerFunction"
+      Handler: src/handlers/bot.handler
+
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
